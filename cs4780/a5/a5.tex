@@ -1,0 +1,231 @@
+\documentclass[]{article}
+
+\usepackage[]{geometry}
+\geometry{
+  top=1in,            % <-- you want to adjust this
+  inner=1in,
+  outer=1in,
+  bottom=1in,
+  headheight=3ex,       % <-- and this
+  headsep=2ex,          % <-- and this
+}
+\usepackage[T1]{fontenc}
+\usepackage{cmbright}
+\usepackage{mathtools}
+\usepackage{algorithmic}
+\usepackage{fancyhdr}
+\usepackage{amssymb}
+\usepackage{multicol}
+\usepackage{parskip}
+\usepackage{titling}
+\pretitle{\begin{flushleft}\LARGE\sffamily}
+\posttitle{\par\end{flushleft}\vskip 0.5em}
+\preauthor{\begin{flushleft}}
+\postauthor{\par\end{flushleft}}
+\predate{\begin{flushleft}\scshape}
+\postdate{\par\end{flushleft}}
+\setlength{\droptitle}{-20pt}
+\setlength{\headheight}{15.2pt}
+\pagestyle{fancy}
+
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt} % remove line at top
+\lhead{\fancyplain{}{CS 4780 A5}}
+\rhead{\fancyplain{}{Justin Cheng \emph{jc882} and Sunling Selena Yang (sy483)}}
+\rfoot{\fancyplain{}{\thepage}}
+
+\begin{document}
+
+\title{CS 4780 Assignment 5}
+\author{Justin Cheng and Sunling Selena Yang}
+\date{\today}
+\maketitle
+
+\hrule
+\vskip 1em
+
+\section{Viterbi Algorithm}
+
+\subsection{Most Likely Translations}
+
+What follows in each section is the table of probabilities for partial paths, then the back-pointer tables.
+
+\subsubsection{$\alpha \eta$}
+
+\begin{tabular}{ |c|c|c| }
+\hline
+  & $\alpha$ & $\eta$ \\
+\hline
+a & 0.04 & 0.0042 \\
+t & 0.03 & 0.0024 \\
+o & 0.02 & 0.006 \\
+n & 0.12 & 0.004 \\
+\hline
+\end{tabular}
+
+\begin{tabular}{ |c|c|c| }
+\hline
+  & $\alpha$ & $\eta$ \\
+\hline
+a & None & n \\
+t & None & a \\
+o & None & n \\
+n & None & o \\
+\hline
+\end{tabular}
+
+Predicting "no".
+
+\subsubsection{$\tau \omega \gamma$}
+
+\begin{tabular}{ |c|c|c|c| }
+\hline
+  & $\tau$ & $\omega$ & $\gamma$ \\
+\hline
+a & 0.02 & 0.0048 & 0.00048 \\
+t & 0.12 & 0.0012 & 0.00216 \\
+o & 0.02 & 0.024 & 0.00048 \\
+n & 0.04 & 0.0012 & 0.0012 \\
+\hline
+\end{tabular}
+
+\begin{tabular}{ |c|c|c|c| }
+\hline
+  & $\tau$ & $\omega$ & $\gamma$ \\
+\hline
+a & None & t & o \\
+t & None & a & o \\
+o & None & t & o \\
+n & None & t & o \\
+\hline
+\end{tabular}
+
+Predicting "tot".
+
+\subsubsection{$\gamma \alpha \omega \eta$}
+
+\begin{tabular}{ |c|c|c|c|c| }
+\hline
+  & $\gamma$ & $\alpha$ & $\omega$ & $\eta$\\
+\hline
+a & 0.02 & 0.0144 & 0.00021 & 3.456e-05 \\
+t & 0.09 & 0.0012 & 0.000864 & 5.4e-05 \\
+o & 0.04 & 0.0036 & 0.0018 & 3.456e-05 \\
+n & 0.04 & 0.006 & 0.00018 & 0.00036 \\
+\hline
+\end{tabular}
+
+\begin{tabular}{ |c|c|c|c|c| }
+\hline
+  & $\gamma$ & $\alpha$ & $\omega$ & $\eta$\\
+\hline
+a & None & t & n & t \\
+t & None & a & a & o \\
+o & None & t & a & t \\
+n & None & o & a & o \\
+\hline
+\end{tabular}
+
+Predicting "taon".
+
+\subsection{Complexity}
+In each "step" of the dynamic program, perform $m$ lookups for each of the English letters. For each English letter, compare against previous $m$ English letters, for a total cost of $O(m^2)$.
+
+There are $k$ steps. So the total cost is $O(km^2)$. Notice that this is independent of the size of the Emelic vocabulary.
+
+In a brute-force algorithm, try all possibilities. So for each Emelic letter, try $m$ English letters. Since there are $k$ letters, this is $O(m^k)$ so far. But each possibility requires $O(k)$ to compute, for each of $O(y_i|y_{i-1})$. So in total, $O(km^k)$.
+
+\subsection{Probability of an observation}
+
+First, $P(x_1,...,x_k|y_1,...,y_k) = P(x_1|y_1) \prod_{i=2}^k P(x_i|y_i)P(y_i|y_{i-1})$.
+
+Second, $P(y_1,...,y_k) = P(y_1)P(y_2|y_1)...P(y_k|y_{k-1})$.
+
+Third, $P(x_1,...,x_k \cap y_1,...,y_k) = P(x_1,...,x_k|y_1,...,y_k) \cdot P(y_1,...,y_k)$.
+
+Finally, $P(x_1,...,x_k) = \sum_{y_1,...,y_k} P(x_1,...,x_k \cap y_1,...,y_k)$.
+
+The running time is $O(km^k)$, since you need to calculate $P(x_1,...,x_k \cap y_1,...,y_k)$, which takes $O(k)$ time, $O(m^k)$ times for each sequence of $y_1,...,y_k$.
+
+For a sequence $\alpha, \gamma, \omega$ starting with $a$ and as notational shorthand, letting $(a,a)$ be the transition probability from $a$ to $a$ and $(a,\alpha)$ from $a$ to $\alpha$, then the probability of $aaa$ is $y_1 = P(a)(a,\alpha)(a,a)(a,\gamma)(a,a)(a,\omega)$. Do this for all possible combinations of English letters.
+
+\subsection{Better translation model}
+
+It would do badly vs the state-of-the-art, because of the different grammars of the two languages. For example, if in one language the sentence structure is Subject-Verb-Object and in the other it is Subject-Object-Verb, it would be difficult to use HMM to derive the right transitions because of the altered ordering. In that case, transition probability would conflict with emission probability.
+
+\section{Statistical Learning Theory}
+
+\subsection{Restricted Linear Classifier}
+
+Now, for a hypothesis with 0 training error, We want $P(Err_p(\hat h) \le \epsilon) = 1- \delta$ as the question asks.
+
+Also, $P(Err_p(\hat h) \ge \epsilon) \le |H|e^{-\epsilon n} \Rightarrow P(Err_p(\hat h) \le \epsilon) \ge 1 - |H|e^{-\epsilon n}$
+
+Combining, $1-\delta \ge 1 - |H|e^{-\epsilon n}$ or $\delta \le |H|e^{-\epsilon n}$
+
+Then, $\epsilon \le \frac{1}{n}(\log |H| - \log (\delta))$
+
+Because each of the 100 weight vectors are binary, and the bias can take 21 values, $|H| = 2^{100} \cdot 21$.
+
+Thus, $\epsilon \le \frac{1}{n} (100 \log 2 + \log 21 - \log(\delta))$
+
+\subsection{Unrestricted Linear Classifier}
+Because there is now no restriction on $w_i$ and $b$, this is a linear classifier in $\mathbb{R}^{100}$, so VCDim = 101.
+
+By Sauer's Lemma, $|\pi_H(S)| \le (\frac{e\cdot |S|}{VCDim(H)})^{VCDim(H)} = (\frac{en}{101})^{101}$.
+
+Then $\epsilon \le \frac{1}{n}(101\log(\frac{en}{101}) - \log(\delta))$.
+
+\subsection{Training Set Size}
+
+We need to find out $n=|S|$ such that $|H|e^{-\epsilon n} \le \delta$
+
+or that $(2^{100} \cdot 21)\cdot e^{-0.1n} \le 0.1$
+
+Solving for $n$ gives us $n \ge 746.6182...$ so $n$ should be 747.
+
+\subsection{Spherical Classifiers}
+
+\subsubsection{At least $d$}
+Consider the example set of $d$ elements in $d$ dimensions, where the coordinate of each element is $1$ for one unique dimension and $0$ everywhere else. For example, the first element has coordinates $(1,0,0,...)$ and the second $(0,1,0,0,0...)$
+
+Any classification of these $d$ elements is linearly separable, and we can simply draw a hyperplane (ex. one parallel to all dimensions classified one way and perpendicular to all the others) to separate these points. We can now construct an arbitrarily large n-dimensional sphere tangent to this hyperplane on whichever side is required to be positive. If the sphere is large enough, we will cover all points on one side of the hyperplane.
+
+An alternative possible construction follows:
+
+If all points are classified as positive, set $R=1$ and $c$  to be at the origin. To exclude all points, set $R=0$. To include $m$ specific points and exclude all others, set $c$ to be the centroid of all points to be included and $R$ to be just large enough to cover all $m$ points, and this is $R=\sqrt{(1-\frac{1}{m})^2 + \frac{1}{m}^2 + ... + \frac{1}{m}^2} = \sqrt{(m-1)/(m^2)+(1-1/m)^2}$. This is because the centroid is at a point with coordinates consisting only of $0$ or $1/m$, depending on which points are included, the L1-distance from any included point is $1/m$, $(m-1)$ times, and $1-1/m$ once. Because all other points have distance $\sqrt{m/m^2 + 1} > R$ from $c$, then this construction shatters all possible sets in $d$ dimensions.
+
+For example, for 3 points, and selecting $x_2, x_3$, the centroid is at $(0,1/3,1/3)$ The distance of the centroid from $x_2,x_3$ is $\sqrt{(2/3)^2+(1/3)^2} = \sqrt{5/9} = R$. However, $x_1$ is at distance $\sqrt{1 + (1/3)^2 + (1/3)^2} > R$.
+
+For $d=3$, given $x_1=(0,0,1)$, $x_2=(0,1,0)$, and $x_3=(1,0,0)$, to cover all points, set $R=1, c=(0,0,0)$. To cover no points, set $R=0, c=(0,0,0)$. To cover any 1 point, set $R=1, c=x_i$ for $i=1,..,3$. To cover any two points, set $c=(\frac{x_{i_1}+x_{j_1}}{2}, \frac{x_{i_2}+x_{j_2}}{2}, \frac{x_{i_3}+x_{j_3}}{2})$ and $R$ to be $\frac{1}{\sqrt{2}}$. The third point is $\sqrt{3/2}$ away, and larger than $R$.
+
+\subsubsection{No more than $2d+1$}
+Note that $sign(R-||x-\vec c||)$ is the same as if $||x-\vec c|| < R$, output $+1$, else $-1$.
+
+Similarly, $sign(w^Tx+b)$ is the same as if $-w^Tx < b$, output $+1$, else $-1$.
+
+Now, letting $\vec c = (c_1,c_2,...,c_d)$,
+\begin{align*}
+||x-\vec c|| &< R \\
+(x_1-c_1)^2 + ... + (x_d-c_d)^2 &< R^2 \quad \text{(as $R > 0$)}\\
+x_1^2 + ... + x_d^2 -2(c_1x_1 + c_2x_2 + ... + c_dx_d) + (c_1^2 + ... + c_d^2) &< R^2 \\
+x_1^2 + ... + x_d^2 -2(c_1x_1 + c_2x_2 + ... + c_dx_d) &< R^2 - (c_1^2 + ... + c_d^2) \\
+(-2c_1)x_1 + (-2c_2)x_2 + ... + (-2c_d)x_d + x_1^2 + ... + x_d^2 &< R^2 - (c_1^2 + ... + c_d^2) \\
+\end{align*}
+
+Consider a linear classifier of dimension $2d$. This takes the form
+\[
+a_1x'_1 + ... + a_{2d}x'_{2d} < b
+\]
+
+where $w = (-a_1,...,-a_{2d})$.
+
+But suppose we let $a_1 = -2c_1$, ..., $a_d = -2c_d$, $b = R^2 - (c_1^2 + ... + c_d^2)$, and let the values of $x'_{d+1} = x_1^2$, ..., $x'_{2d} = x_d^2$, which is a restriction on the possible values of $x'_{d+1},...,x'_{2d}$. Finally, let $a_{d+1} = 1$,..., $a_{2d} = 1$.
+
+Then the final row of our spherical classifier corresponds to all the terms in the linear classifier of dimension $2d$.
+
+We've just shown that a spherical classifier in $d$ dimensions is no more expressive than a linear classifier in $2d$ dimensions.
+
+Since we know the VCdim of this linear classifier is $2d+1$, the VCdim for the spherical classifier cannot be greater than $2d+1$.
+
+\end{document}
